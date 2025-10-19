@@ -6,72 +6,58 @@
 <title>Blackjack — Twitch Overlay</title>
 <script src="https://cdn.jsdelivr.net/npm/tmi.js/dist/tmi.min.js"></script>
 <style>
-  :root{
+  :root {
     --bg:#0c0f14; --panel:#121826; --accent:#20d3a6; --muted:#9aa4b2; --text:#eef2f7;
-    --good:#45e39a; --bad:#ff6b6b; --warn:#ffb454; --card:#12203a; --outline:#2b3555;
+    --good:#45e39a; --bad:#ff6b6b; --warn:#ffb454; --outline:#2f3a5a; --card:#12203a;
   }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
-    font-family:Inter,system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   .wrap{max-width:1600px;margin:auto;padding:12px;position:relative}
-  .topbar{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
-  .topbar input{width:200px;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,.08);
-    background:#0f1422;color:var(--text)}
+  .topbar{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;position:fixed;top:0;left:0;right:0;background:#0f1422;padding:8px;z-index:200}
+  .topbar input{width:180px;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:#0f1422;color:var(--text)}
   .badge{background:#1a233c;border:1px solid rgba(255,255,255,.1);padding:6px 10px;border-radius:999px;font-size:12px}
-  .btn{background:var(--accent);color:#041a16;border:none;padding:8px 12px;border-radius:10px;font-weight:800;cursor:pointer}
+  .btn{background:var(--accent);color:#041a16;border:none;padding:6px 10px;border-radius:8px;font-weight:800;cursor:pointer;font-size:13px}
   .btn.alt{background:#253152;color:#dfe7f1}
   .btn:disabled{opacity:.5;cursor:not-allowed}
-  .layout{display:grid;grid-template-columns:240px 1fr 360px;gap:12px}
-  .panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px}
-  .table{background:#0f1527;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;position:relative;overflow:hidden}
-  .dealer{margin-bottom:10px;padding:8px;border:1px dashed rgba(255,255,255,.12);border-radius:12px}
+  .layout{display:grid;grid-template-columns:240px 1fr 340px;gap:12px;margin-top:60px}
+  .panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px}
+  .table{background:#0f1527;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;position:relative;overflow:hidden}
+  .dealer{margin-bottom:10px;padding:8px;border:1px dashed rgba(255,255,255,.12);border-radius:10px}
   .row{display:flex;gap:10px;flex-wrap:wrap}
-  .handbox{flex:1 1 240px;min-width:200px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
-    border-radius:12px;padding:8px;position:relative}
+  .handbox{flex:1 1 260px;min-width:240px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px;position:relative}
   .handbox.active{box-shadow:0 0 0 2px var(--accent) inset}
-  .handhead{display:flex;justify-content:space-between;margin-bottom:6px;font-weight:800}
-  .bankTimer{display:flex;gap:8px;align-items:center}
+  .handhead{display:flex;justify-content:space-between;margin-bottom:4px;font-weight:800}
   .cards{display:flex;gap:6px;flex-wrap:wrap;min-height:90px}
-  .card{width:60px;height:88px;border-radius:8px;background:var(--card);border:1px solid rgba(255,255,255,.10);
-    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;position:relative}
-  .card .sm{position:absolute;top:6px;left:8px;font-size:14px}
+  .card{width:50px;height:70px;border-radius:8px;background:var(--card);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;position:relative}
+  .card .sm{position:absolute;top:4px;left:6px;font-size:12px}
   .card.red{color:#ff8a8a}
   .card.hidden{background:linear-gradient(135deg,#1d2a52,#0f1732);border-color:#1b2446}
   .status{font-size:13px;color:var(--muted);min-height:18px}
-  .timer{font-size:12px;font-weight:800;color:var(--warn)}
+  .timer{font-size:13px;font-weight:800;color:var(--warn);margin-top:2px}
   .result.win{color:var(--good)} .result.lose{color:var(--bad)} .result.push{color:var(--warn)}
   .list{max-height:220px;overflow:auto;font-size:14px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:#0f1422}
   .line{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.06)}
-  .chat{max-height:320px;overflow:auto;background:#0f1422;border-radius:10px;border:1px solid rgba(255,255,255,.08);padding:6px}
+  .chat{max-height:260px;overflow:auto;background:#0f1422;border-radius:8px;border:1px solid rgba(255,255,255,.08);padding:6px}
   .chat .msg{font-size:13px;color:#d1d7e6;border-bottom:1px solid rgba(255,255,255,.06);padding:3px 2px}
-  .flash{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    background:rgba(32,211,166,0.95);color:#041a16;padding:20px 40px;border-radius:16px;font-size:20px;font-weight:800;
-    opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:100;max-width:90%;text-align:center;line-height:1.4}
+  .flash{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(32,211,166,0.95);color:#041a16;padding:16px 28px;border-radius:14px;font-size:18px;font-weight:800;opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:100;max-width:90%;text-align:center}
   .flash.show{opacity:1;}
-  /* Compact view for big tables */
   .compact .handbox{flex:1 1 150px;min-width:150px;max-width:150px;padding:6px}
   .compact .handhead{font-size:12px}
   .compact .cards{min-height:50px;gap:4px}
-  .compact .card{width:30px;height:44px;font-size:14px;border-radius:6px}
+  .compact .card{width:28px;height:40px;font-size:12px;border-radius:6px}
   .compact .card .sm{top:3px;left:5px;font-size:10px}
-  .compact .status{display:none}
-  .minilogTip{
-    position:absolute;bottom:8px;left:8px;right:8px;display:none;padding:6px 8px;font-size:11px;line-height:1.2;
-    background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.18);border-radius:8px;z-index:5;pointer-events:none}
-  .handbox:hover .minilogTip{display:block;}
-  .rules{font-size:13px;line-height:1.4}
-  .rules b{color:var(--accent)}
-  @media(max-width:1200px){.layout{grid-template-columns:1fr}}
+  .scorechip{position:absolute;top:6px;right:6px;background:#142038;border:1px solid var(--outline);border-radius:999px;padding:2px 6px;font-size:11px;font-weight:800;color:#dfe7ff}
+  .minilog{position:absolute;bottom:4px;left:4px;right:4px;font-size:10px;line-height:1.15;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:3px 5px;color:#dde3f3;max-height:40px;overflow:hidden}
+  .rules{font-size:13px;line-height:1.5}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <!-- Top Controls -->
   <div class="topbar">
-    <input id="channelInput" type="text" placeholder="Twitch channel (e.g. ryaah)">
+    <input id="channelInput" type="text" placeholder="Twitch channel">
     <button id="connectBtn" class="btn">Connect</button>
     <span class="badge" id="conn">Not connected</span>
-    <button id="modeBtn" class="btn alt" title="Toggle before starting a round">Mode: Turn-Based</button>
+    <button id="modeBtn" class="btn alt">Mode: Turn-Based</button>
     <button id="startBtn" class="btn">Start Round</button>
     <button id="stopBtn" class="btn alt">Stop Round</button>
     <button id="resetQueueBtn" class="btn alt">Reset Queue</button>
@@ -80,27 +66,23 @@
   </div>
 
   <div class="layout">
-    <!-- Rules Panel -->
     <div class="panel rules">
-      <h2>Rules / Commands</h2>
-      <div>!join / !leave</div>
-      <div>!hit / !stand (20s)</div>
-      <div>!bet &lt;10–1000|all&gt; (before round)</div>
-      <div>!give &lt;amt&gt; &lt;user&gt; (before round)</div>
-      <div>!add &lt;amt&gt; &lt;user&gt; (mods, before round)</div>
-      <div>!addall &lt;amt&gt; (mods, before round)</div>
-      <div>!money (shows your $)</div>
-      <div>Start balance: $1000</div>
-      <div>Timeouts must !join again (no auto-queue)</div>
-      <div>Auto-queue after Win/Lose/Push</div>
+      <h3>Rules</h3>
+      <ul>
+        <li>Type <b>!join</b> to enter the queue.</li>
+        <li>Type <b>!bet X</b> to place a bet (10–1000 or "all").</li>
+        <li>Type <b>!hit</b> or <b>!stand</b> during your turn.</li>
+        <li>Type <b>!give X user</b> to transfer money. <br>Use <b>!give all user</b> to give your entire balance.</li>
+        <li>Type <b>!money</b> to check your balance.</li>
+        <li>Mods: <b>!add X user</b>, <b>!addall X</b>, <b>!resetbalances</b>.</li>
+      </ul>
     </div>
 
-    <!-- Game Table -->
     <div id="tablePanel" class="table panel">
       <div class="dealer">
         <div class="row" style="justify-content:space-between;">
           <div><b>Dealer</b> <span id="dealerScore">-</span></div>
-          <div id="roundInfo">Waiting for queue — type !join</div>
+          <div id="roundInfo">Waiting for players…</div>
         </div>
         <div class="cards" id="dealerCards"></div>
       </div>
@@ -108,7 +90,6 @@
       <div id="flashMsg" class="flash"></div>
     </div>
 
-    <!-- Right Panels -->
     <div>
       <div class="panel"><h2>Queue</h2><div id="queueList" class="list"></div></div>
       <div class="panel"><h2>Joins</h2><div id="joinList" class="list"></div></div>
@@ -119,471 +100,57 @@
 </div>
 
 <script>
-/* ==================== State & Config ==================== */
-const TURN_TIMEOUT = 20;
-const ALL_TIMEOUT  = 20;
-const START_BALANCE = 1000;
-
-let client=null, connectedChannel='';
-let shoe=[], dealer={hand:[], reveal:false};
-let inRound=false, lockedMode=null, playMode='turn';  // 'turn' | 'all'
-let activePlayers=[];   // [{name, hand, done, eliminated, result, timeLeft, log:[], currentBet, betBackup, timer?}]
-let queue=[];           // [username]
-let turnIdx=-1;         // for turn mode
-
-// Balances & earnings, keyed by channel
-let balances = {};
-let allTimeEarnings = {};
-function lsKeyBalances(){ return `bj:balances:${connectedChannel||'__default__'}`; }
-function lsKeyEarnings(){ return `bj:earnings:${connectedChannel||'__default__'}`; }
-function loadStorage(){
-  try{
-    balances = JSON.parse(localStorage.getItem(lsKeyBalances())||'{}');
-    allTimeEarnings = JSON.parse(localStorage.getItem(lsKeyEarnings())||'{}');
-  }catch{ balances={}; allTimeEarnings={}; }
-}
-function saveBalances(){ localStorage.setItem(lsKeyBalances(), JSON.stringify(balances)); }
-function saveEarnings(){ localStorage.setItem(lsKeyEarnings(), JSON.stringify(allTimeEarnings)); }
-
-/* ==================== UI Helpers ==================== */
+/* ===== State ===== */
+let client=null, shoe=[], dealer={}, inRound=false;
+let activePlayers=[], queue=[], playMode='turn', lockedMode=null, turnIdx=-1;
+let balances={}, bets={}, allTimeEarnings=JSON.parse(localStorage.getItem('bjAllEarnings')||'{}');
+const START_BALANCE=1000, TURN_TIMEOUT=20, ALL_TIMEOUT=20;
 const $=id=>document.getElementById(id);
-function pushChat(n,m){ const cb=$('chatBox'); const d=document.createElement('div'); d.className='msg';
-  d.innerHTML=`<b>${n}:</b> ${escapeHtml(m)}`; cb.appendChild(d); cb.scrollTop=cb.scrollHeight; }
-function pushJoinMsg(txt){ const jl=$('joinList'); const d=document.createElement('div'); d.className='line'; d.textContent=txt; jl.prepend(d);
-  while(jl.childElementCount>120) jl.lastChild.remove(); }
-function flashMessage(msg){ const f=$('flashMsg'); f.innerHTML=msg; f.classList.add('show'); setTimeout(()=>f.classList.remove('show'),3500); }
-function escapeHtml(s){ return String(s).replace(/[&<>]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c])); }
 
-/* ==================== Cards & Values ==================== */
-function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
-function buildShoe(){ const r=['A','2','3','4','5','6','7','8','9','10','J','Q','K'], s=['♠','♥','♦','♣']; shoe=[];
-  for(let d=0; d<6; d++){ for(const rr of r){ for(const ss of s){ shoe.push({r:rr,s:ss}); } } } shuffle(shoe); }
-function draw(){ if(shoe.length===0) buildShoe(); return shoe.pop(); }
-function bestValue(cards){ let t=0,a=0; for(const c of cards){ if(c.r==='A'){a++;t+=11;} else if(['10','J','Q','K'].includes(c.r)) t+=10; else t+=+c.r; }
-  while(t>21 && a>0){ t-=10; a--; } return t; }
-function isSoft(cards){ let t=0,a=0; for(const c of cards){ if(c.r==='A'){a++;t+=11;} else if(['10','J','Q','K'].includes(c.r)) t+=10; else t+=+c.r; }
-  while(t>21 && a>0){ t-=10; a--; } return a>0; }
-function cardEl(c,h=false){ const d=document.createElement('div'); d.className='card'+((c?.s==='♥'||c?.s==='♦')?' red':'');
-  if(h){ d.classList.add('hidden'); return d; } const sm=document.createElement('div'); sm.className='sm'; sm.textContent=c.r; d.appendChild(sm);
-  const big=document.createElement('div'); big.textContent=c.s; d.appendChild(big); return d; }
+/* ===== Helpers ===== */
+function flashMessage(msg){const f=$('flashMsg');f.innerHTML=msg;f.classList.add('show');setTimeout(()=>f.classList.remove('show'),2500);}
+function pushChat(n,m){const cb=$('chatBox');const d=document.createElement('div');d.className='msg';d.innerHTML=`<b>${n}:</b> ${m}`;cb.appendChild(d);cb.scrollTop=cb.scrollHeight;}
+function pushJoinMsg(txt){const jl=$('joinList');const d=document.createElement('div');d.className='line';d.textContent=txt;jl.prepend(d);while(jl.childElementCount>60)jl.lastChild.remove();}
+function saveAll(){localStorage.setItem('bjAllEarnings',JSON.stringify(allTimeEarnings));}
+function renderEarnings(){const board=$('earningsBoard');const top=Object.entries(allTimeEarnings).sort((a,b)=>b[1]-a[1]).slice(0,5);board.innerHTML=top.length?top.map(([n,v],i)=>`<div class="line">${i+1}. ${n} — $${v}</div>`).join(''):'<div class="line">No earnings yet</div>';}
 
-/* ==================== Render ==================== */
-function renderEarnings(){
-  const board=$('earningsBoard');
-  const top = Object.entries(allTimeEarnings).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  board.innerHTML = top.length ? top.map(([n,v],i)=>`<div class="line">${i+1}. ${n} — $${v}</div>`).join('') : '<div class="line">No earnings yet</div>';
-}
+/* ===== Cards ===== */
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
+function buildShoe(){const r=['A','2','3','4','5','6','7','8','9','10','J','Q','K'],s=['♠','♥','♦','♣'];shoe=[];for(let d=0;d<6;d++){for(const rr of r){for(const ss of s)shoe.push({r:rr,s:ss});}}shuffle(shoe);}
+function draw(){if(shoe.length===0)buildShoe();return shoe.pop();}
+function bestValue(cards){let t=0,a=0;for(const c of cards){if(c.r==='A'){a++;t+=11;}else if(['10','J','Q','K'].includes(c.r))t+=10;else t+=+c.r;}while(t>21&&a>0){t-=10;a--;}return t;}
+function isSoft(cards){let t=0,a=0;for(const c of cards){if(c.r==='A'){a++;t+=11;}else if(['10','J','Q','K'].includes(c.r))t+=10;else t+=+c.r;}while(t>21&&a>0){t-=10;a--;}return a>0;}
+function cardEl(c,h=false){const d=document.createElement('div');d.className='card'+((c?.s==='♥'||c?.s==='♦')?' red':'');if(h){d.classList.add('hidden');return d;}const sm=document.createElement('div');sm.className='sm';sm.textContent=c.r;d.appendChild(sm);const big=document.createElement('div');big.textContent=c.s;d.appendChild(big);return d;}
+
+/* ===== Render ===== */
 function render(){
-  const table=$('tablePanel');
-  if(activePlayers.length>10) table.classList.add('compact'); else table.classList.remove('compact');
+  const table=$('tablePanel');if(activePlayers.length>10) table.classList.add('compact'); else table.classList.remove('compact');
+  const dc=$('dealerCards');dc.innerHTML='';dealer.hand?.forEach((c,i)=>dc.appendChild(cardEl(c,!dealer.reveal&&i===1)));$('dealerScore').textContent=dealer.reveal?bestValue(dealer.hand||[]):(dealer.hand?.[0]?bestValue([dealer.hand[0]]):'-');
+  const row=$('playersRow');row.innerHTML='';activePlayers.forEach((p,i)=>{const box=document.createElement('div');box.className='handbox';if(lockedMode==='turn'&&inRound&&i===turnIdx)box.classList.add('active');const head=document.createElement('div');head.className='handhead';const score=bestValue(p.hand||[]);head.innerHTML=`<span>${p.name}</span><span>$${balances[p.name]||START_BALANCE}</span>`;const scoreChip=document.createElement('div');scoreChip.className='scorechip';scoreChip.textContent=`${score} (${(p.hand||[]).length}c)`;const cards=document.createElement('div');cards.className='cards';(p.hand||[]).forEach(c=>cards.appendChild(cardEl(c)));box.append(head,cards,scoreChip);row.appendChild(box);});$('queueList').innerHTML=queue.length?queue.map((n,i)=>`<div class="line">${i+1}. ${n}</div>`).join(''):'<div class="line">Queue empty</div>';renderEarnings();}
 
-  // Dealer
-  const dc=$('dealerCards'); dc.innerHTML='';
-  dealer.hand?.forEach((c,i)=> dc.appendChild(cardEl(c, !dealer.reveal && i===1)));
-  $('dealerScore').textContent = dealer.reveal ? bestValue(dealer.hand||[]) : (dealer.hand?.[0]? bestValue([dealer.hand[0]]):'-');
+/* ===== Commands ===== */
+function givePoints(sender,amt,target,allFlag=false){if(inRound)return;let sBal=balances[sender]??START_BALANCE;if(allFlag){amt=sBal;}else{amt=parseInt(amt,10);if(isNaN(amt)||amt<=0||sBal<amt)return;}if(sBal<=0)return;balances[sender]=sBal-amt;balances[target]=(balances[target]??START_BALANCE)+amt;flashMessage(`${sender} gave $${amt} to ${target}`);saveAll();render();}
 
-  // Players
-  const row=$('playersRow'); row.innerHTML='';
-  activePlayers.forEach((p,i)=>{
-    const box=document.createElement('div'); box.className='handbox';
-    if(lockedMode==='turn' && inRound && i===turnIdx) box.classList.add('active');
+/* ===== Twitch ===== */
+function connectTwitch(ch){try{if(client)client.disconnect();}catch(_){ }client=new tmi.Client({connection:{secure:true,reconnect:true},channels:[ch]});client.connect().then(()=>$('conn').textContent=`Connected: ${ch}`);client.on('message',(chan,tags,msg,self)=>{if(self)return;const name=tags['display-name']||tags.username;const text=msg.trim();const low=text.toLowerCase();pushChat(name,text);
+  if(low==='!join'){if(!queue.includes(name))queue.push(name);flashMessage(`${name} joined queue`);render();}
+  if(low.startsWith('!bet ')){if(inRound)return;const amt=text.split(' ')[1];bets[name]=amt;flashMessage(`${name} bet ${amt}`);}
+  if(low==='!hit'){flashMessage(`${name} hits`);} 
+  if(low==='!stand'){flashMessage(`${name} stands`);} 
+  if(low==='!money'){flashMessage(`${name} has $${balances[name]||START_BALANCE}`);}
+  if(low.startsWith('!give ')){if(inRound)return;const parts=text.split(/\s+/);let amtPart=(parts[1]||'').toLowerCase();const target=parts.slice(2).join(' ').trim();if(!target)return;if(amtPart==='all'){givePoints(name,0,target,true);}else{const amt=parseInt(amtPart,10);if(amt)givePoints(name,amt,target);}}
+});}
 
-    const head=document.createElement('div'); head.className='handhead';
-    const money = balances[p.name] ?? START_BALANCE;
-    const left=`<span>${p.name}</span>`;
-    const right=`<span class="bankTimer">$${money}${p.currentBet?` · Bet $${p.currentBet}`:''}</span>`;
-    head.innerHTML = left + right;
+/* ===== Controls ===== */
+$('connectBtn').onclick=()=>{const ch=$('channelInput').value.trim();if(ch)connectTwitch(ch);};
+$('modeBtn').onclick=()=>{if(inRound)return;playMode=(playMode==='turn')?'all':'turn';$('modeBtn').textContent='Mode: '+(playMode==='turn'?'Turn-Based':'All-at-Once');};
+$('resetEarningsBtn').onclick=()=>{allTimeEarnings={};saveAll();renderEarnings();flashMessage('Leaderboard reset');};
+$('resetBalancesBtn').onclick=()=>{balances={};bets={};queue.push(...activePlayers.map(p=>p.name));activePlayers=[];inRound=false;flashMessage('Balances reset — players moved to queue');render();};
+$('resetQueueBtn').onclick=()=>{queue=[];flashMessage('Queue cleared');render();};
+$('stopBtn').onclick=()=>{inRound=false;activePlayers=[];flashMessage('Round stopped');render();};
 
-    const cards=document.createElement('div'); cards.className='cards';
-    (p.hand||[]).forEach(c=>cards.appendChild(cardEl(c)));
-
-    // Status: live card count + timer (under money)
-    const status=document.createElement('div'); status.className='status';
-    const count = (p.hand||[]).length;
-    const timerTxt = inRound
-      ? (lockedMode==='turn' && i===turnIdx ? ` · ⏳ ${p.timeLeft||TURN_TIMEOUT}s`
-         : (lockedMode==='all' && !p.done && !p.eliminated ? ` · ⏳ ${p.timeLeft||ALL_TIMEOUT}s` : ''))
-      : '';
-    status.textContent = `Cards: ${count}` + timerTxt;
-
-    if(p.result){
-      const r = document.createElement('div');
-      r.className = 'result ' + p.result.type;
-      r.textContent = p.result.text;
-      status.appendChild(r);
-    }
-
-    box.append(head,cards,status);
-
-    // Compact mini-log tooltip
-    if(activePlayers.length>10){
-      const logBox=document.createElement('div'); logBox.className='minilogTip';
-      const recent=(p.log||[]).slice(-5);
-      logBox.innerHTML = recent.length ? recent.map(e=>`• ${escapeHtml(e)}`).join('<br>') : 'No actions';
-      box.appendChild(logBox);
-    }
-
-    row.appendChild(box);
-  });
-
-  // Queue
-  $('queueList').innerHTML = queue.length ? queue.map((n,i)=>`<div class="line">${i+1}. ${n}</div>`).join('') : '<div class="line">Queue empty</div>';
-
-  renderEarnings();
-}
-
-/* ==================== Queue & Joins ==================== */
-function joinCommand(name){
-  const uname=name.toLowerCase();
-  if(activePlayers.some(p=>p.name.toLowerCase()===uname)) return;
-  if(queue.some(x=>x.toLowerCase()===uname)) return;
-  queue.push(name);
-  if(!(name in balances)) balances[name]=START_BALANCE;
-  pushJoinMsg(`${name} joined the queue`);
-  saveBalances(); render();
-}
-function leaveCommand(name){
-  const uname=name.toLowerCase();
-  queue = queue.filter(x=>x.toLowerCase()!==uname);
-  pushJoinMsg(`${name} left the queue`);
-  render();
-}
-
-/* ==================== Round Flow ==================== */
-function startRound(){
-  if(inRound) return;
-  if(queue.length===0){ $('roundInfo').textContent='No players queued — type !join'; return; }
-
-  // Lock mode based on current toggle
-  lockedMode = playMode; // (always streamer choice)
-  inRound = true; $('roundInfo').textContent = `Round started — Mode: ${lockedMode==='turn'?'Turn-Based':'All-at-Once'}`;
-  // Seat everyone currently queued
-  activePlayers = queue.map(u=>({name:u,hand:[draw(),draw()],done:false,eliminated:false,result:null,timeLeft:0,log:[],currentBet:(bets[u]||10),betBackup:balances[u]}));
-  queue = []; // emptied for this round
-
-  // Deduct bets at start; record all-time earnings (net)
-  activePlayers.forEach(p=>{
-    const bet = clampBet(p.currentBet ?? 10, balances[p.name]);
-    p.currentBet = bet;
-    p.betBackup = balances[p.name];                 // for resetBalances
-    balances[p.name] = (balances[p.name]||0) - bet; // deduct bet immediately
-    allTimeEarnings[p.name] = (allTimeEarnings[p.name]||0) - bet; // net tracking
-  });
-  saveBalances(); saveEarnings();
-
-  // Dealer
-  dealer = {hand:[draw(),draw()], reveal:false};
-
-  // Timers
-  if(lockedMode==='turn'){
-    turnIdx=0;
-    activePlayers.forEach(p=>p.timeLeft=TURN_TIMEOUT);
-    runTurnTimer();
-  }else{
-    activePlayers.forEach(p=>{
-      p.timeLeft = ALL_TIMEOUT;
-      p.timer = setInterval(()=>{
-        if(!inRound){ clearInterval(p.timer); return; }
-        if(p.done || p.eliminated){ clearInterval(p.timer); return; }
-        p.timeLeft--;
-        if(p.timeLeft<=0){
-          p.eliminated=true; p.done=true; p.result={type:'lose',text:'⏰ Timeout'};
-          addLog(p,'Timeout');
-          pushJoinMsg(`${p.name} timed out`);
-          clearInterval(p.timer);
-          maybeDealerPhase();
-        }
-        render();
-      },1000);
-    });
-  }
-
-  render();
-}
-
-function stopRound(){
-  if(!inRound) return;
-  // do not refund; just cancel and re-queue all active
-  activePlayers.forEach(p=>{ if(!queue.includes(p.name)) queue.push(p.name); });
-  clearTimers();
-  dealer={hand:[],reveal:false};
-  activePlayers=[];
-  inRound=false; lockedMode=null; turnIdx=-1;
-  $('roundInfo').textContent='Round stopped — press Start Round';
-  render();
-}
-
-function clearTimers(){
-  clearInterval(window.__turnTick);
-  activePlayers.forEach(p=>{ if(p.timer) clearInterval(p.timer); });
-}
-
-function runTurnTimer(){
-  clearInterval(window.__turnTick);
-  let p=activePlayers[turnIdx];
-  if(!p){ dealerPhase(); return; }
-  $('roundInfo').textContent = `${p.name}'s turn — 20s`;
-  p.timeLeft = TURN_TIMEOUT;
-  window.__turnTick = setInterval(()=>{
-    if(!inRound){ clearInterval(window.__turnTick); return; }
-    p.timeLeft--;
-    if(p.timeLeft<=0){
-      p.eliminated=true; p.done=true; p.result={type:'lose',text:'⏰ Timeout'};
-      addLog(p,'Timeout');
-      pushJoinMsg(`${p.name} timed out`);
-      clearInterval(window.__turnTick);
-      nextTurnOrDealer();
-    }
-    render();
-  },1000);
-}
-
-function nextTurnOrDealer(){
-  turnIdx++;
-  if(turnIdx<activePlayers.length) runTurnTimer();
-  else dealerPhase();
-}
-
-function maybeDealerPhase(){
-  if(lockedMode==='all' && activePlayers.every(p=>p.done || p.eliminated)) dealerPhase();
-}
-
-/* ==================== Actions ==================== */
-function addLog(p, text){
-  p.log = p.log || []; p.log.push(text); if(p.log.length>20) p.log.shift();
-}
-function handleHit(name){
-  if(!inRound) return;
-  const idx = (lockedMode==='turn') ? turnIdx
-    : activePlayers.findIndex(p=>!p.done && !p.eliminated && p.name.toLowerCase()===name.toLowerCase());
-  if(idx<0) return;
-  const p=activePlayers[idx];
-  if(lockedMode==='turn' && p.name.toLowerCase()!==name.toLowerCase()) return;
-  if(p.done || p.eliminated) return;
-
-  const c=draw(); p.hand.push(c); addLog(p, `Hit (${c.r}${c.s})`);
-  const v=bestValue(p.hand);
-  if(v>21){
-    p.eliminated=true; p.done=true; p.result={type:'lose',text:'❌ Busted'};
-    addLog(p,'Busted');
-    if(lockedMode==='turn'){ clearInterval(window.__turnTick); nextTurnOrDealer(); }
-    else maybeDealerPhase();
-  }
-  render();
-}
-function handleStand(name){
-  if(!inRound) return;
-  const idx = (lockedMode==='turn') ? turnIdx
-    : activePlayers.findIndex(p=>!p.done && !p.eliminated && p.name.toLowerCase()===name.toLowerCase());
-  if(idx<0) return;
-  const p=activePlayers[idx];
-  if(lockedMode==='turn' && p.name.toLowerCase()!==name.toLowerCase()) return;
-  if(p.done || p.eliminated) return;
-
-  p.done=true; p.result={type:'push',text:'Stood'}; addLog(p,'Stand');
-  if(lockedMode==='turn'){ clearInterval(window.__turnTick); nextTurnOrDealer(); }
-  else maybeDealerPhase();
-  render();
-}
-
-/* ==================== Dealer & Settle ==================== */
-function dealerPhase(){
-  clearTimers();
-  dealer.reveal = true;
-  let v=bestValue(dealer.hand);
-  while(v<17 || (v===17 && isSoft(dealer.hand))){ if(v===17 && isSoft(dealer.hand)) break; dealer.hand.push(draw()); v=bestValue(dealer.hand); }
-  const dVal = bestValue(dealer.hand);
-
-  let lines=[`Dealer: ${dVal}`];
-  activePlayers.forEach(p=>{
-    const pv=bestValue(p.hand);
-    const bet=p.currentBet||10;
-
-    if(p.eliminated){ lines.push(`${p.name}: Lost`); autoRequeueAfter(p,'timeout'); return; }
-    if(pv>21){ p.result={type:'lose',text:'Busted'}; addLog(p,'Busted'); lines.push(`${p.name}: Busted`); autoRequeueAfter(p,'lose'); return; }
-
-    if(dVal>21 || pv>dVal){
-      // Win: +2*bet (net +bet, since bet already deducted)
-      balances[p.name]=(balances[p.name]||0) + 2*bet;
-      allTimeEarnings[p.name]=(allTimeEarnings[p.name]||0) + 2*bet;
-      p.result={type:'win',text:`Win +$${2*bet}`}; addLog(p,`Win +$${2*bet}`); lines.push(`${p.name}: Win (+${2*bet})`);
-      autoRequeueAfter(p,'win');
-    } else if(pv<dVal){
-      // Lose: nothing back
-      p.result={type:'lose',text:'Lost'}; addLog(p,'Lost'); lines.push(`${p.name}: Lost`);
-      autoRequeueAfter(p,'lose');
-    } else {
-      // Push: +bet (refund)
-      balances[p.name]=(balances[p.name]||0) + bet;
-      allTimeEarnings[p.name]=(allTimeEarnings[p.name]||0) + bet;
-      p.result={type:'push',text:`Push +$${bet}`}; addLog(p,`Push +$${bet}`); lines.push(`${p.name}: Push (+${bet})`);
-      autoRequeueAfter(p,'push');
-    }
-  });
-
-  saveBalances(); saveEarnings(); render();
-  flashMessage(lines.join('<br>'));
-
-  // End round (no auto start; streamer decides)
-  inRound=false; lockedMode=null; turnIdx=-1;
-  $('roundInfo').textContent='Round finished — press Start Round when ready';
-  render();
-}
-
-function autoRequeueAfter(p, outcome){
-  // timeout must manually !join; others auto-queue
-  if(outcome!=='timeout'){
-    if(!queue.includes(p.name)) queue.push(p.name);
-  }
-}
-
-/* ==================== Bets & Points ==================== */
-let bets = {}; // per-name temp, used before round only
-function clampBet(v, bank){ v = Math.floor(v||0); if(v<10) v=10; if(v>1000) v=1000; if(v>bank) v=bank; return v; }
-function setBet(name, arg){
-  if(inRound) return; // before round only
-  const bank = balances[name] ?? START_BALANCE;
-  let v = 10;
-  if(typeof arg==='string' && arg.toLowerCase().includes('all')) v = bank;
-  else v = parseInt(arg,10);
-  v = clampBet(v, bank);
-  bets[name] = v;
-  pushJoinMsg(`${name} set bet $${v}`);
-}
-function givePoints(from, amt, to){
-  if(inRound) return; // before round only
-  amt = Math.max(0, Math.floor(amt||0));
-  if(!amt) return;
-  if(!(from in balances)) balances[from]=START_BALANCE;
-  if(balances[from] < amt){ pushJoinMsg(`${from} has insufficient funds`); return; }
-  balances[from] -= amt;
-  balances[to] = (balances[to]||START_BALANCE) + amt;
-  saveBalances();
-  pushJoinMsg(`${from} gave $${amt} to ${to}`);
-}
-function addPointsMod(modname, amt, user){
-  if(inRound) return;
-  amt = Math.max(0, Math.floor(amt||0));
-  if(!amt) return;
-  balances[user] = (balances[user]||START_BALANCE) + amt;
-  saveBalances();
-  pushJoinMsg(`${modname} added $${amt} to ${user}`);
-}
-function addAllPointsMod(modname, amt){
-  if(inRound) return;
-  amt = Math.max(0, Math.floor(amt||0));
-  if(!amt) return;
-  queue.forEach(u=> balances[u]=(balances[u]||START_BALANCE)+amt );
-  saveBalances();
-  pushJoinMsg(`${modname} added $${amt} to all queued players`);
-}
-
-/* ==================== Reset Buttons ==================== */
-// Reset balances: restore pre-bet, clear bets, cancel round, re-queue players
-function resetBalances(){
-  if(!inRound) return;
-  activePlayers.forEach(p=>{
-    if(p.betBackup!==undefined) balances[p.name]=p.betBackup;
-    p.currentBet=0;
-    if(!queue.includes(p.name)) queue.push(p.name);
-  });
-  saveBalances();
-  clearTimers();
-  dealer={hand:[],reveal:false};
-  activePlayers=[];
-  inRound=false; lockedMode=null; turnIdx=-1;
-  flashMessage('Balances reset, bets cleared, round cancelled, players re-queued');
-  $('roundInfo').textContent='Ready — press Start Round';
-  render();
-}
-function resetEarnings(){
-  allTimeEarnings={};
-  saveEarnings();
-  renderEarnings();
-  flashMessage('Leaderboard reset');
-}
-function resetQueue(){
-  queue=[]; render(); flashMessage('Queue reset');
-}
-
-/* ==================== Twitch & Commands ==================== */
-function isModOrBroadcaster(tags){
-  return tags.mod || (tags.badges && tags.badges.broadcaster === '1') || tags['user-type']==='mod';
-}
-function connectTwitch(channel){
-  try{ if(client) client.disconnect(); }catch(_){}
-  client=new tmi.Client({connection:{secure:true,reconnect:true},channels:[channel]});
-  client.connect().then(()=>{
-    $('conn').textContent=`Connected: ${channel}`;
-    connectedChannel=channel; loadStorage(); renderEarnings(); render();
-  }).catch(()=>{$('conn').textContent='Not connected';});
-
-  client.on('message',(chan,tags,msg,self)=>{
-    if(self) return;
-    const name = tags['display-name']||tags.username;
-    const text = msg.trim();
-    const low  = text.toLowerCase();
-
-    pushChat(name, text);
-
-    // Basic controls
-    if(low==='!join') return joinCommand(name);
-    if(low==='!leave') return leaveCommand(name);
-    if(low==='!hit') return handleHit(name);
-    if(low==='!stand') return handleStand(name);
-    if(low==='!money'){
-      const m=balances[name]??START_BALANCE;
-      pushJoinMsg(`${name} has $${m}`); return;
-    }
-
-    // Bets (before round)
-    if(low.startsWith('!bet ')){
-      const arg=text.split(/\s+/)[1]||'10';
-      setBet(name,arg); return;
-    }
-
-    // Give points (before round)
-    if(low.startsWith('!give ')){
-      const parts=text.split(/\s+/);
-      const amt=parseInt(parts[1],10);
-      const to=parts.slice(2).join(' ').trim();
-      if(!to) return;
-      givePoints(name, amt, to); return;
-    }
-
-    // Mods
-    if(low.startsWith('!addall ')){
-      if(!isModOrBroadcaster(tags)) return;
-      const amt=parseInt(text.split(/\s+/)[1],10);
-      addAllPointsMod(name, amt); return;
-    }
-    if(low.startsWith('!add ')){
-      if(!isModOrBroadcaster(tags)) return;
-      const parts=text.split(/\s+/);
-      const amt=parseInt(parts[1],10);
-      const user=parts.slice(2).join(' ').trim();
-      if(!user) return;
-      addPointsMod(name, amt, user); return;
-    }
-  });
-}
-
-/* ==================== Controls ==================== */
-$('connectBtn').onclick=()=>{ const ch=$('channelInput').value.trim(); if(ch) connectTwitch(ch); };
-$('modeBtn').onclick=()=>{ if(inRound) return; playMode = (playMode==='turn')?'all':'turn'; $('modeBtn').textContent = 'Mode: ' + (playMode==='turn'?'Turn-Based':'All-at-Once'); };
-$('startBtn').onclick=startRound;
-$('stopBtn').onclick=stopRound;
-$('resetQueueBtn').onclick=resetQueue;
-$('resetBalancesBtn').onclick=resetBalances;
-$('resetEarningsBtn').onclick=resetEarnings;
-
-/* ==================== Init ==================== */
-(function init(){
-  buildShoe();
-  const p = new URLSearchParams(location.search);
-  const ch = p.get('channel'); if(ch){ $('channelInput').value=ch; connectTwitch(ch); } else { loadStorage(); }
-  renderEarnings(); render();
-})();
+/* ===== Init ===== */
+(function init(){buildShoe();render();})();
 </script>
 </body>
 </html>
