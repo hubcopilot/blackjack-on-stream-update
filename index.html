@@ -676,6 +676,11 @@ function connectTwitch(channel){
     else if(low==='!start'){
       cmd_start(tags, name);
     }
+    else if(low==='!bjleaderboard'){
+    const url = `${location.origin}${location.pathname}?leaderboard=1&channel=${connectedChannel}`;
+    pushChat('System', `Leaderboard link: ${url}`);
+    flashMessage(`Leaderboard link shared: ${url}`);
+    }
   });
 }
 
@@ -694,7 +699,19 @@ $('resetEarningsBtn').onclick=resetLeaderboard;
   const p=new URLSearchParams(location.search);
   const ch=p.get('channel'); if(ch){ $('channelInput').value=ch; connectTwitch(ch); }
   loadGlobal(); renderEarnings(); render();
+  
+  // leaderboard-only view
+  if(p.get('leaderboard')==='1'){
+    document.body.innerHTML = `
+      <div style="padding:20px;font-family:sans-serif;background:#0c0f14;color:#eef2f7;">
+        <h1>${ch} — Blackjack Leaderboard</h1>
+        <div id="lb"></div>
+      </div>`;
+    const top = Object.entries(allTimeEarnings).sort((a,b)=>b[1]-a[1]).slice(0,20);
+    document.getElementById('lb').innerHTML = top.length
+      ? `<ol>${top.map(([n,v])=>`<li>${n}: $${v}</li>`).join('')}</ol>`
 })();
+
 </script>
 </body>
 </html>
