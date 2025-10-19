@@ -654,6 +654,11 @@ function connectTwitch(channel){
       const parts = low.split(/\s+/);
       cmd_bet(name, parts[1] || undefined);
     }
+    else if (low === '!bjleaderboard') {
+    const chanName = connectedChannel || chan.replace('#','');
+    const url = `https://hubcopilot.github.io/blackjack-on-stream-update/leaderboard.html?channel=${encodeURIComponent(chanName)}`;
+    client.say(chan, `View the Blackjack leaderboard for ${chanName}: ${url}`);
+    }
     else if(low==='!hit') handleHit(name);
     else if(low==='!stand') handleStand(name);
     else if(low==='!money') cmd_money(name);
@@ -676,11 +681,6 @@ function connectTwitch(channel){
     else if(low==='!start'){
       cmd_start(tags, name);
     }
-    else if(low==='!bjleaderboard'){
-    const url = `${location.origin}${location.pathname}?leaderboard=1&channel=${connectedChannel}`;
-    pushChat('System', `Leaderboard link: ${url}`);
-    flashMessage(`Leaderboard link shared: ${url}`);
-    }
   });
 }
 
@@ -699,19 +699,7 @@ $('resetEarningsBtn').onclick=resetLeaderboard;
   const p=new URLSearchParams(location.search);
   const ch=p.get('channel'); if(ch){ $('channelInput').value=ch; connectTwitch(ch); }
   loadGlobal(); renderEarnings(); render();
-  
-  // leaderboard-only view
-  if(p.get('leaderboard')==='1'){
-    document.body.innerHTML = `
-      <div style="padding:20px;font-family:sans-serif;background:#0c0f14;color:#eef2f7;">
-        <h1>${ch} — Blackjack Leaderboard</h1>
-        <div id="lb"></div>
-      </div>`;
-    const top = Object.entries(allTimeEarnings).sort((a,b)=>b[1]-a[1]).slice(0,20);
-    document.getElementById('lb').innerHTML = top.length
-      ? `<ol>${top.map(([n,v])=>`<li>${n}: $${v}</li>`).join('')}</ol>`
 })();
-
 </script>
 </body>
 </html>
