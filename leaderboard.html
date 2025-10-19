@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Blackjack Leaderboard</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#0c0f14; color:#eef2f7; padding:20px; }
+  h1 { color:#20d3a6; }
+  .line { padding:6px; border-bottom:1px solid rgba(255,255,255,.1); }
+</style>
+</head>
+<body>
+  <h1>Blackjack Leaderboard</h1>
+  <div id="leaderboard"></div>
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const chan = params.get("channel") || "unknown";
+  document.title = `Blackjack Leaderboard — ${chan}`;
+  
+  const key = "bjEarnings:" + chan.toLowerCase();
+  const earnings = JSON.parse(localStorage.getItem(key) || "{}");
+  
+  const div = document.getElementById("leaderboard");
+  const sorted = Object.entries(earnings).sort((a,b)=>b[1]-a[1]);
+  
+  if(sorted.length===0){
+    div.innerHTML = "<div class=line>No earnings recorded yet.</div>";
+  } else {
+    div.innerHTML = sorted.map(([user,amt],i)=> 
+      `<div class=line>${i+1}. ${user} — $${amt}</div>`
+    ).join("");
+  }
+})();
+</script>
+</body>
+</html>
