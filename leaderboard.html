@@ -1,38 +1,33 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
+<meta charset="utf-8">
 <title>Blackjack Leaderboard</title>
 <style>
-  body { font-family: Arial, sans-serif; background:#0c0f14; color:#eef2f7; padding:20px; }
-  h1 { color:#20d3a6; }
-  .line { padding:6px; border-bottom:1px solid rgba(255,255,255,.1); }
+  body{background:#0c0f14;color:#eef2f7;font-family:sans-serif;padding:20px}
+  table{border-collapse:collapse;width:100%;max-width:800px;margin:auto;background:#121826}
+  th,td{border:1px solid #2b3555;padding:8px 12px;text-align:left}
+  th{background:#1a233c}
+  tr:nth-child(even){background:#0f1527}
 </style>
 </head>
 <body>
-  <h1>Blackjack Leaderboard</h1>
-  <div id="leaderboard"></div>
-
+<h1>Blackjack Leaderboard</h1>
+<p>This page shows per-channel wallets and lifetime winnings.</p>
+<table id="leaderTable">
+  <thead>
+    <tr><th>User</th><th>Wallet</th><th>Lifetime</th></tr>
+  </thead>
+  <tbody></tbody>
+</table>
 <script>
-(function(){
-  const params = new URLSearchParams(location.search);
-  const chan = params.get("channel") || "unknown";
-  document.title = `Blackjack Leaderboard — ${chan}`;
-  
-  const key = "bjEarnings:" + chan.toLowerCase();
-  const earnings = JSON.parse(localStorage.getItem(key) || "{}");
-  
-  const div = document.getElementById("leaderboard");
-  const sorted = Object.entries(earnings).sort((a,b)=>b[1]-a[1]);
-  
-  if(sorted.length===0){
-    div.innerHTML = "<div class=line>No earnings recorded yet.</div>";
-  } else {
-    div.innerHTML = sorted.map(([user,amt],i)=> 
-      `<div class=line>${i+1}. ${user} — $${amt}</div>`
-    ).join("");
-  }
-})();
+const balances = JSON.parse(localStorage.getItem('bjBalances:global')||'{}');
+const earnings = JSON.parse(localStorage.getItem('bjEarnings:global')||'{}');
+const users = new Set([...Object.keys(balances),...Object.keys(earnings)]);
+const rows = [...users].map(u=>({name:u,wallet:balances[u]||0,lifetime:earnings[u]||0}));
+rows.sort((a,b)=>b.lifetime-a.lifetime);
+document.querySelector('#leaderTable tbody').innerHTML =
+  rows.map(r=>`<tr><td>${r.name}</td><td>$${r.wallet}</td><td>$${r.lifetime}</td></tr>`).join('');
 </script>
 </body>
 </html>
